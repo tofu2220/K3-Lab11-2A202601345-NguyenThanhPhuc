@@ -150,7 +150,7 @@ venv.bak/
 # outputs/attack_results.json
 # outputs/audit_log.json
 # outputs/metrics.json
-outputs
+# outputs
 
 # Spyder project settings
 .spyderproject
