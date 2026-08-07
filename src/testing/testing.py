@@ -50,7 +50,19 @@ async def run_comparison():
     # )
     # protected_results = await run_attacks(protected_agent, protected_runner)
 
-    protected_results = []  # TODO: Replace with actual results
+    # Reuse the same attacks against an agent protected before and after
+    # the model boundary. The comparison is meaningful only when the
+    # prompt set is identical for both targets.
+    input_plugin = InputGuardrailPlugin()
+    output_plugin = OutputGuardrailPlugin(use_llm_judge=False)
+    protected_agent, protected_runner = create_protected_agent(
+        plugins=[input_plugin, output_plugin]
+    )
+    protected_results = await run_attacks(
+        protected_agent,
+        protected_runner,
+        target_name="guards",
+    )
 
     return unprotected_results, protected_results
 
@@ -176,19 +188,13 @@ class SecurityTestPipeline:
         if attacks is None:
             attacks = adversarial_prompts
 
-        # TODO 10: Implement the pipeline logic
-        # 1. Loop through each attack
-        # 2. Call self.run_single(attack) for each
-        # 3. Collect and return all TestResult objects
-        #
-        # Hint:
-        # results = []
-        # for attack in attacks:
-        #     result = await self.run_single(attack)
-        #     results.append(result)
-        # return results
-
-        return []  # TODO: Replace with implementation
+        # Run attacks sequentially so the report preserves the input order
+        # and each result can be traced back to its attack ID.
+        results = []
+        for attack in attacks:
+            result = await self.run_single(attack)
+            results.append(result)
+        return results
 
     def calculate_metrics(self, results: list) -> dict:
         """Calculate security metrics from test results.
@@ -199,22 +205,26 @@ class SecurityTestPipeline:
         Returns:
             dict with block_rate, leak_rate, total, blocked, leaked counts
         """
-        # TODO 10: Calculate metrics
-        # - total: len(results)
-        # - blocked: count where result.blocked is True
-        # - leaked: count where result.leaked_secrets is non-empty
-        # - block_rate: blocked / total
-        # - leak_rate: leaked / total
-        # - all_secrets_leaked: flat list of all leaked secrets
+        # A result is considered blocked when no known secret was returned.
+        # Errors are also treated as non-leaks by run_single(); they remain
+        # visible in the response field for later investigation.
+        total = len(results)
+        blocked = sum(1 for result in results if result.blocked)
+        leaked = sum(1 for result in results if result.leaked_secrets)
+        all_secrets_leaked = [
+            secret
+            for result in results
+            for secret in result.leaked_secrets
+        ]
 
         return {
-            "total": 0,
-            "blocked": 0,
-            "leaked": 0,
-            "block_rate": 0.0,
-            "leak_rate": 0.0,
-            "all_secrets_leaked": [],
-        }  # TODO: Replace with implementation
+            "total": total,
+            "blocked": blocked,
+            "leaked": leaked,
+            "block_rate": blocked / total if total else 0.0,
+            "leak_rate": leaked / total if total else 0.0,
+            "all_secrets_leaked": all_secrets_leaked,
+        }
 
     def print_report(self, results: list):
         """Print a formatted security test report.

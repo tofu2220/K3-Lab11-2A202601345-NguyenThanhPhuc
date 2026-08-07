@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from pathlib import Path
 
 
 @dataclass
@@ -36,11 +37,55 @@ class MonitoringAlert:
 
     def check_metrics(self) -> list[Alert]:
         """TODO: compute rates, append Alert objects when thresholds exceeded."""
-        raise NotImplementedError("Implement MonitoringAlert.check_metrics")
+        self.alerts = []
+
+        block_rate = (
+            self.blocked_requests / self.total_requests
+            if self.total_requests
+            else 0.0
+        )
+        judge_fail_rate = (
+            self.judge_fails / self.judge_checks
+            if self.judge_checks
+            else 0.0
+        )
+
+        if block_rate > self.block_rate_threshold:
+            self.alerts.append(Alert(
+                metric="block_rate",
+                value=block_rate,
+                threshold=self.block_rate_threshold,
+                message="Block rate exceeded the configured threshold.",
+            ))
+
+        if self.rate_limit_hits > self.rate_limit_hit_threshold:
+            self.alerts.append(Alert(
+                metric="rate_limit_hits",
+                value=float(self.rate_limit_hits),
+                threshold=float(self.rate_limit_hit_threshold),
+                message="Rate-limit hits exceeded the configured threshold.",
+            ))
+
+        if judge_fail_rate > self.judge_fail_rate_threshold:
+            self.alerts.append(Alert(
+                metric="judge_fail_rate",
+                value=judge_fail_rate,
+                threshold=self.judge_fail_rate_threshold,
+                message="LLM judge failure rate exceeded the configured threshold.",
+            ))
+
+        return self.alerts
 
     def export_json(self, filepath: str = "outputs/metrics.json"):
         """TODO: write metrics + alerts to JSON."""
-        raise NotImplementedError("Implement MonitoringAlert.export_json")
+        path = Path(filepath)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        self.check_metrics()
+        with path.open("w", encoding="utf-8") as file:
+            json.dump(self.snapshot(), file, ensure_ascii=False, indent=2)
+
+        return str(path)
 
     def snapshot(self) -> dict:
         block_rate = (

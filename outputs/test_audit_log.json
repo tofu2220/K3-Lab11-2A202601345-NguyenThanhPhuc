@@ -1,0 +1,19 @@
+[
+  {
+    "event": "input",
+    "request_id": "c53e1ecc-3a09-44f9-a4c5-2af244bc2924",
+    "user_id": "student-1",
+    "text": "Balance?",
+    "timestamp": "2026-08-07T03:24:36.329679+00:00"
+  },
+  {
+    "event": "output",
+    "request_id": "c53e1ecc-3a09-44f9-a4c5-2af244bc2924",
+    "user_id": "student-1",
+    "text": "Your balance is protected.",
+    "blocked": false,
+    "layer": null,
+    "latency_ms": 0.03,
+    "timestamp": "2026-08-07T03:24:36.329716+00:00"
+  }
+]
