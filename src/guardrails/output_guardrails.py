@@ -44,10 +44,15 @@ def content_filter(response: str) -> dict:
     PII_PATTERNS = {
         # TODO: Add regex patterns for:
         # - VN phone number: r"0\d{9,10}"
+        "phone": r"\b0\d{9,10}\b",
         # - Email: r"[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}"
+        "email": r"[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}",
         # - National ID (CMND/CCCD): r"\b\d{9}\b|\b\d{12}\b"
+        "national_id": r"\b\d{9}\b|\b\d{12}\b",
         # - API key pattern: r"sk-[a-zA-Z0-9-]+"
+        "api_key": r"sk-[a-zA-Z0-9-]+",
         # - Password pattern: r"password\s*[:=]\s*\S+"
+        "password": r"password\s*[:=]\s*\S+",
     }
 
     for name, pattern in PII_PATTERNS.items():
@@ -98,7 +103,12 @@ If UNSAFE, add a brief reason on the next line.
 #     instruction=SAFETY_JUDGE_INSTRUCTION,
 # )
 
-safety_judge_agent = None  # TODO: Replace with implementation
+safety_judge_agent = llm_agent.LlmAgent(
+    model="gemini-2.0-flash",
+    name="safety_judge",
+    instruction=SAFETY_JUDGE_INSTRUCTION,
+)
+
 judge_runner = None
 
 
@@ -178,12 +188,35 @@ class OutputGuardrailPlugin(base_plugin.BasePlugin):
         # 1. Call content_filter(response_text)
         #    - If issues found: replace llm_response.content with redacted version
         #    - Increment self.redacted_count
+        filter_result = content_filter(response_text)
+        if filter_result["issues"]:
+            llm_response.content = types.Content(
+                role="model",
+                parts=[types.Part.from_text(text=filter_result["redacted"])],
+            )
+            self.redacted_count += 1
         # 2. If use_llm_judge: call llm_safety_check(response_text)
         #    - If unsafe: replace llm_response.content with a safe message
         #    - Increment self.blocked_count
-        # 3. Return llm_response (possibly modified)
+        text_for_judge = filter_result["redacted"]
+        if self.use_llm_judge:
+            judge_result = await llm_safety_check(text_for_judge)
 
-        return llm_response  # TODO: modify if needed
+            if not judge_result["safe"]:
+                llm_response.content = types.Content(
+                    role="model",
+                    parts=[
+                        types.Part.from_text(
+                            text=(
+                                "I’m sorry, but I can’t provide that response "
+                                "because it may contain unsafe information."
+                            )
+                        )
+                    ],
+                )
+                self.blocked_count += 1
+        # 3. Return llm_response (possibly modified)
+        return llm_response
 
 
 # ============================================================
