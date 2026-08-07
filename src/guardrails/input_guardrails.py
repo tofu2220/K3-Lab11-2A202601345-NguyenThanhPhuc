@@ -4,14 +4,14 @@ Lab 11 — Part 2A: Input Guardrails
   TODO 2: Topic filter
   TODO 3: Input Guardrail Plugin (ADK)
 """
+
 import re
 
-from google.genai import types
-from google.adk.plugins import base_plugin
 from google.adk.agents.invocation_context import InvocationContext
+from google.adk.plugins import base_plugin
+from google.genai import types
 
 from core.config import ALLOWED_TOPICS, BLOCKED_TOPICS
-
 
 # ============================================================
 # TODO 1: Implement detect_injection()
@@ -31,6 +31,7 @@ from core.config import ALLOWED_TOPICS, BLOCKED_TOPICS
 # summarize an external bank-transfer email just because it is external data.
 # Regex is one signal, not the whole security boundary.
 # ============================================================
+
 
 def detect_injection(user_input: str) -> bool:
     """Detect prompt injection patterns in user input.
@@ -63,6 +64,7 @@ def detect_injection(user_input: str) -> bool:
 # Return True if input should be BLOCKED (off-topic or blocked topic).
 # ============================================================
 
+
 def topic_filter(user_input: str) -> bool:
     """Check if input is off-topic or contains blocked topics.
 
@@ -92,6 +94,7 @@ def topic_filter(user_input: str) -> bool:
 #   - user_message is types.Content (not str)
 #   - Return types.Content to block, or None to pass through
 # ============================================================
+
 
 class InputGuardrailPlugin(base_plugin.BasePlugin):
     """Plugin that blocks bad input before it reaches the LLM."""
@@ -146,6 +149,7 @@ class InputGuardrailPlugin(base_plugin.BasePlugin):
 # Quick tests
 # ============================================================
 
+
 def test_injection_detection():
     """Test detect_injection with sample inputs."""
     test_cases = [
@@ -157,7 +161,9 @@ def test_injection_detection():
     for text, expected in test_cases:
         result = detect_injection(text)
         status = "PASS" if result == expected else "FAIL"
-        print(f"  [{status}] '{text[:55]}...' -> detected={result} (expected={expected})")
+        print(
+            f"  [{status}] '{text[:55]}...' -> detected={result} (expected={expected})"
+        )
 
 
 def test_topic_filter():
@@ -202,9 +208,11 @@ async def test_input_plugin():
 if __name__ == "__main__":
     import sys
     from pathlib import Path
+
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
     test_injection_detection()
     test_topic_filter()
     import asyncio
+
     asyncio.run(test_input_plugin())
