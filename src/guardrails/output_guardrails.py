@@ -4,16 +4,16 @@ Lab 11 — Part 2B: Output Guardrails
   TODO 5: LLM-as-Judge safety check
   TODO 6: Output Guardrail Plugin (ADK)
 """
+
 import re
 import textwrap
 
-from google.genai import types
-from google.adk.agents import llm_agent
 from google.adk import runners
+from google.adk.agents import llm_agent
 from google.adk.plugins import base_plugin
+from google.genai import types
 
 from core.utils import chat_with_agent
-
 
 # ============================================================
 # TODO 4: Implement content_filter()
@@ -26,6 +26,7 @@ from core.utils import chat_with_agent
 # - "issues": list of problems found
 # - "redacted": cleaned response (PII replaced with [REDACTED])
 # ============================================================
+
 
 def content_filter(response: str) -> dict:
     """Filter response for PII, secrets, and harmful content.
@@ -140,6 +141,7 @@ async def llm_safety_check(response_text: str) -> dict:
 #   - Return the (possibly modified) llm_response, or None to keep original
 # ============================================================
 
+
 class OutputGuardrailPlugin(base_plugin.BasePlugin):
     """Plugin that checks agent output before sending to user."""
 
@@ -188,6 +190,7 @@ class OutputGuardrailPlugin(base_plugin.BasePlugin):
 # Quick tests
 # ============================================================
 
+
 def test_content_filter():
     """Test content_filter with sample responses.
 
@@ -216,13 +219,17 @@ def load_lab_pii_dataset():
     import json
     from pathlib import Path
 
-    path = Path(__file__).resolve().parents[2] / "data" / "pii_hallucination_samples.json"
+    path = (
+        Path(__file__).resolve().parents[2] / "data" / "pii_hallucination_samples.json"
+    )
     with path.open(encoding="utf-8") as f:
         return json.load(f)
+
 
 if __name__ == "__main__":
     import sys
     from pathlib import Path
+
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
     test_content_filter()
